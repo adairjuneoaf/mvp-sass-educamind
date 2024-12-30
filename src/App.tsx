@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaFileVideo, FaGithub, FaUpload, FaWandMagic } from 'react-icons/fa6';
+import { FaGithub, FaWandMagic } from 'react-icons/fa6';
 
 import { Button } from './components/ui/button';
 import { Label } from './components/ui/label';
@@ -13,6 +13,7 @@ import {
 import { Separator } from './components/ui/separator';
 import { Slider } from './components/ui/slider';
 import { Textarea } from './components/ui/textarea';
+import { VideoInputForm } from './components/video/input-form';
 
 export const App = () => {
   return (
@@ -78,40 +79,7 @@ export const App = () => {
           </div>
 
           <aside className="w-80 space-y-6">
-            <form action="#" className="space-y-6">
-              <label
-                htmlFor="video"
-                className="border flex rounded-md aspect-video cursor-pointer border-dashed 
-                text-sm flex-col gap-2 items-center justify-center text-muted-foreground hover:bg-primary/5"
-              >
-                <FaFileVideo className="w-4 h-4" />
-                Selecione um Vídeo
-              </label>
-              <input
-                type="file"
-                name="video"
-                id="video"
-                accept="video/mp4"
-                className="sr-only"
-              />
-
-              <Separator />
-
-              <div className="space-y-2">
-                <Label htmlFor="transcription_prompt">
-                  Prompt de Transcrição
-                </Label>
-                <Textarea
-                  id="transcription_prompt"
-                  className="h20 resize-none leading-relaxed placeholder:text-zinc-500"
-                  placeholder="Inclua palavras chave mencionadas no vídeo separadas por vírgula(,)."
-                />
-              </div>
-
-              <Button type="submit" className="w-full">
-                Carregar Vídeo <FaUpload className="w-4 h-4 ml-1" />
-              </Button>
-            </form>
+            <VideoInputForm />
 
             <Separator />
 
@@ -163,7 +131,8 @@ export const App = () => {
               <Separator />
 
               <Button type="submit" className="w-full">
-                Executar <FaWandMagic className="w-4 h-4 ml-1" />
+                <FaWandMagic className="w-4 h-4 ml-1" />
+                Executar
               </Button>
             </form>
           </aside>
