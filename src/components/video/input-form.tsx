@@ -1,3 +1,4 @@
+import { fetchFile } from '@ffmpeg/util';
 import React from 'react';
 import { FaFileVideo, FaSpinner, FaUpload } from 'react-icons/fa6';
 
@@ -6,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { api } from '@/lib/axios';
-import { useVideoToAudio } from '@/lib/ffmpeg';
+import { getFFmpeg } from '@/lib/ffmpeg';
 import { cn } from '@/lib/utils';
 
 import { Progress } from '../ui/progress';
@@ -26,40 +27,79 @@ const statusMessages = {
   finished: 'Finalizado!',
 };
 
-export const VideoInputForm = () => {
+interface IVideoInputForm {
+  onChangeVideoId: (videoId: string | null) => void;
+}
+
+export const VideoInputForm = (props: IVideoInputForm) => {
+  const { onChangeVideoId } = props;
   const [status, setStatus] = React.useState<Status>('awaiting');
+  const [progress, setProgress] = React.useState(0);
   const [videoFile, setVideoFile] = React.useState<File | null>(null);
 
   const promptInputRef = React.useRef<HTMLTextAreaElement>(null);
 
-  const { convert, inProgress, progressPerCent } = useVideoToAudio();
-
   const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { files } = event.currentTarget;
-
     if (!files) return null;
 
     setVideoFile(files.item(0));
   };
 
+  const convertVideoToAudio = async (video: File) => {
+    try {
+      const ffmpeg = await getFFmpeg();
+
+      await ffmpeg.writeFile('input.mp4', await fetchFile(video));
+
+      ffmpeg.on('progress', (progress) => {
+        setProgress(Math.round(progress.progress * 100));
+      });
+
+      await ffmpeg.exec([
+        '-i',
+        'input.mp4',
+        '-map',
+        '0:a',
+        '-b:a',
+        '20k',
+        '-acodec',
+        'libmp3lame',
+        'output.mp3',
+      ]);
+
+      const data = await ffmpeg.readFile('output.mp3');
+
+      const audioFileBlob = new Blob([data], { type: 'audio/mpeg' });
+      const audioFile = new File([audioFileBlob], 'audio.mp3', {
+        type: 'audio/mpeg',
+      });
+
+      setProgress(0);
+
+      return audioFile;
+    } catch (error) {
+      setProgress(0);
+      console.error(error);
+      throw new Error('Error to convert video to audio.');
+    }
+  };
+
   const handleUploadVideo = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const dataForm = new FormData();
 
     const userPrompt = promptInputRef.current?.value;
-
     if (!videoFile) return null;
 
     setStatus('converting');
 
-    const audioFile = await convert(videoFile);
-
-    const data = new FormData();
-
-    data.append('file', audioFile);
+    const audioFile = await convertVideoToAudio(videoFile);
+    dataForm.append('file', audioFile);
 
     setStatus('uploading');
 
-    const response = await api.post('/videos', data);
+    const response = await api.post('/videos', dataForm);
 
     setStatus('transcribing');
 
@@ -68,6 +108,8 @@ export const VideoInputForm = () => {
     });
 
     setStatus('finished');
+
+    onChangeVideoId(response.data.content.id);
   };
 
   const previewURL = React.useMemo(() => {
@@ -80,7 +122,7 @@ export const VideoInputForm = () => {
     <form onSubmit={handleUploadVideo} className="space-y-6">
       <label
         htmlFor="video"
-        aria-disabled={inProgress}
+        aria-disabled={status !== 'awaiting'}
         className={cn([
           'relative border flex rounded-md aspect-video cursor-pointer border-dashed text-sm flex-col gap-2 items-center justify-center text-muted-foreground hover:bg-primary/5',
           `${status !== 'awaiting' ? 'pointer-events-none cursor-not-allowed' : 'pointer-events-auto cursor-pointer'}`,
@@ -122,7 +164,7 @@ export const VideoInputForm = () => {
         onChange={handleFileSelected}
       />
 
-      <Progress value={progressPerCent} className="h-2" />
+      <Progress value={progress} className="h-2" />
 
       <Separator />
 

@@ -29,14 +29,11 @@ export const useVideoToAudio = () => {
   const [progressPerCent, setProgressPerCent] = useState(0);
 
   const convert = React.useCallback(async (video: File) => {
-    // console.log('Convert started!');
-
     try {
       const ffmpeg = await getFFmpeg();
 
       await ffmpeg.writeFile('input.mp4', await fetchFile(video));
 
-      // ffmpeg.on('log', (log) => console.log('🟡 log ffmpeg > ', log));
       ffmpeg.on('progress', (progress) => {
         setInProgress(true);
         setProgressPerCent(Math.round(progress.progress * 100));
@@ -61,7 +58,6 @@ export const useVideoToAudio = () => {
         type: 'audio/mpeg',
       });
 
-      // console.log('🟢 Convert finished!');
       setInProgress(false);
       setProgressPerCent(0);
 

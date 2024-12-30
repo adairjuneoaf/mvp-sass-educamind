@@ -28,7 +28,7 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      'no-unused-vars': ['warn'],
+      'no-unused-vars': ['off'],
       semi: ['warn', 'always'],
       quotes: ['error', 'single'],
       'react-refresh/only-export-components': [
